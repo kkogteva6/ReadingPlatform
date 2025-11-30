@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 from typing import Dict, List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -27,17 +27,24 @@ app.add_middleware(
 
 # Модели данных
 
+# Произведение
 class Work(BaseModel):
-    """Литературное произведение в эталонном графе"""
     id: str
     title: str
     author: str
     age: str
-    concepts: Dict[str, float] #ценностные маркеры и их вес
+    concepts: Dict[str, float] # ценностные маркеры и их вес
 
-# Хранилище произведений
+# Профиль читателя
+class ReaderProfile(BaseModel):
+    id: str
+    age: str
+    concepts: Dict[str, float] # ценностные маркеры и их вес
 
+# Глобальный список произведений
 WORKS: List[Work] = []
+# Список профилей читателей
+PROFILES: Dict[str, ReaderProfile] = {}
 
 def load_works_from_json() -> List[Work]:
     """Загрузка списка произведений из JSON-файла при старте сервера"""
@@ -69,6 +76,18 @@ def get_works() -> List[Work]:
     """Вернуть весь список эталонных произведений"""
     return WORKS
 
+# Создать/обновить профиль читателя
+@app.post("/profile", response_model=ReaderProfile)
+async def create_or_update_profile(profile: ReaderProfile) -> ReaderProfile:
+    PROFILES[profile.id] = profile
+    return profile
 
+# Получить профиль читателя по id
+@app.post("/profile/{profile_id}", response_model=ReaderProfile)
+async def get_profile(profile_id: str) -> ReaderProfile:
+    profile = PROFILES.get(profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Профиль не найден")
+    return profile
 
 
