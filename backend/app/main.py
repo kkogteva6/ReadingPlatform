@@ -1,3 +1,7 @@
+#.\Activate.ps1
+# uvicorn app.main:app --reload --host 127.0.0.1 --port 7666
+
+
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
@@ -8,8 +12,15 @@ from typing import Dict, List, Optional, Tuple
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from neo4j import GraphDatabase
 
 
+# Подключение к базе данных Neo4j
+uri = "bolt://localhost:7687"  # Адрес сервера Neo4j
+username = "neo4j"  # Имя пользователя
+password = "neo4j12345"  # Пароль
+
+driver = GraphDatabase.driver(uri, auth=(username, password))
 
 
 # Инициализация приложения
@@ -114,12 +125,36 @@ CONCEPT_ANCHORS: Dict[str, List[str]] = {
     ],
 }
 
-def load_works_from_json() -> List[Work]:
-    """Загрузка списка произведений из JSON-файла при старте сервера"""
-    data_path = Path(__file__).resolve().parent.parent / "data" / "works.json"
-    with data_path.open("r", encoding="utf-8") as f:
-        raw_list = json.load(f)
-    return [Work(**item) for item in raw_list]
+def get_works_from_neo4j() -> List[Work]:
+    query = """
+    MATCH (w:Work)
+    OPTIONAL MATCH (w)-[r:EXPRESSES]->(c:Concept)
+    RETURN
+      w.id    AS id,
+      w.title AS title,
+      w.author AS author,
+      w.age   AS age,
+      collect({name: c.name, weight: r.weight}) AS concepts
+    ORDER BY w.title
+    """
+    works: List[Work] = []
+    with driver.session() as session:
+        for rec in session.run(query):
+            concepts_dict = {
+                item["name"]: float(item["weight"])
+                for item in rec["concepts"]
+                if item["name"] is not None and item["weight"] is not None
+            }
+            works.append(
+                Work(
+                    id=rec["id"],
+                    title=rec["title"],
+                    author=rec["author"],
+                    age=rec["age"],
+                    concepts=concepts_dict,
+                )
+            )
+    return works
 
 
 def compute_deficits(profile: ReaderProfile, target: Dict[str, float]) -> Dict[str, float]:
@@ -195,6 +230,7 @@ def recommend_works(profile: ReaderProfile, works: List[Work], top_n: int = 5) -
     return [w for _, w in scored[:top_n]]
 
 
+
 def _cosine(a: np.ndarray, b: np.ndarray) -> float:
     na = np.linalg.norm(a)
     nb = np.linalg.norm(b)
@@ -230,15 +266,15 @@ def analyze_text_to_concepts(text: str) -> Dict[str, float]:
     return normalized
 
 
+# Эндпоинты
 
-# Список книг грзится один раз при старте сервера
 @app.on_event("startup")
 def startup_event():
     global WORKS
-    WORKS = load_works_from_json()
+    WORKS = get_works_from_neo4j()
 
 
-# Эндпоинты
+
 
 @app.get("/")
 def root():
@@ -250,8 +286,9 @@ def health():
 
 @app.get("/works", response_model=List[Work])
 def get_works() -> List[Work]:
-    """Вернуть весь список эталонных произведений"""
-    return WORKS
+    """Вернуть все произведения из Neo4j"""
+    works = get_works_from_neo4j()
+    return works
 
 # Создать/обновить профиль читателя
 @app.post("/profile", response_model=ReaderProfile)
