@@ -1,3 +1,6 @@
+import numpy as np
+from sentence_transformers import SentenceTransformer
+
 from pathlib import Path
 import json
 from typing import Dict, List, Optional, Tuple
@@ -5,6 +8,8 @@ from typing import Dict, List, Optional, Tuple
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+
 
 
 # Инициализация приложения
@@ -41,11 +46,19 @@ class ReaderProfile(BaseModel):
     age: str
     concepts: Dict[str, float] # ценностные маркеры и их вес
 
+class AnalyzeTextRequest(BaseModel):
+    reader_id: str
+    text: str
+
+
 # Глобальный список произведений
 WORKS: List[Work] = []
 # Список профилей читателей
 PROFILES: Dict[str, ReaderProfile] = {}
 
+# Глобальное создание модели
+SBERT_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+sbert = SentenceTransformer(SBERT_MODEL_NAME)
 
 
 # Эталонные профили по возрастным группам
@@ -80,6 +93,26 @@ CONCEPT_ALIASES: Dict[str, Dict[str, float]] = {
     },
 }
 
+
+
+# Словарь якорных фраз для концептов
+CONCEPT_ANCHORS: Dict[str, List[str]] = {
+    "патриотизм": [
+        "любовь к Родине", "служение Отечеству", "гордость за страну", "защита Родины"
+    ],
+    "любовь": [
+        "чувство любви", "любовь и забота", "верность в отношениях", "прощение близких"
+    ],
+    "ответственность": [
+        "отвечать за поступки", "выполнять обещания", "принятие последствий", "долг"
+    ],
+    "совесть": [
+        "муки совести", "стыд за поступок", "внутренний моральный закон", "раскаяние"
+    ],
+    "свобода": [
+        "свобода выбора", "право на решение", "независимость личности", "самостоятельность"
+    ],
+}
 
 def load_works_from_json() -> List[Work]:
     """Загрузка списка произведений из JSON-файла при старте сервера"""
@@ -162,6 +195,41 @@ def recommend_works(profile: ReaderProfile, works: List[Work], top_n: int = 5) -
     return [w for _, w in scored[:top_n]]
 
 
+def _cosine(a: np.ndarray, b: np.ndarray) -> float:
+    na = np.linalg.norm(a)
+    nb = np.linalg.norm(b)
+    if na == 0 or nb == 0:
+        return 0.0
+    return float(np.dot(a, b) / (na * nb))
+
+def analyze_text_to_concepts(text: str) -> Dict[str, float]:
+    """
+    1) строим embedding текста
+    2) для каждого концепта считаем similarity к усреднённому embedding его якорей
+    3) приводим к шкале 0..1
+    """
+    text_vec = sbert.encode([text], normalize_embeddings=True)[0]
+
+    scores: Dict[str, float] = {}
+    raw_vals: List[float] = []
+
+    for concept, anchors in CONCEPT_ANCHORS.items():
+        anchor_vecs = sbert.encode(anchors, normalize_embeddings=True)
+        anchor_mean = np.mean(anchor_vecs, axis=0)
+        sim = _cosine(text_vec, anchor_mean)  # примерно [-1..1], на практике чаще 0..1
+        scores[concept] = sim
+        raw_vals.append(sim)
+
+    # Нормализация в 0..1 (простая): сдвиг+масштаб
+    mn = min(raw_vals) if raw_vals else 0.0
+    mx = max(raw_vals) if raw_vals else 1.0
+    if mx - mn < 1e-9:
+        return {k: 0.0 for k in scores}
+
+    normalized = {k: float((v - mn) / (mx - mn)) for k, v in scores.items()}
+    return normalized
+
+
 
 # Список книг грзится один раз при старте сервера
 @app.on_event("startup")
@@ -208,3 +276,32 @@ def get_recommendations(reader_id: str, top_n: int = 5) -> List[Work]:
         raise HTTPException(status_code=404, detail="Профиль не найден")
 
     return recommend_works(profile, WORKS, top_n=top_n)
+
+
+@app.post("/analyze_text")
+def analyze_text(req: AnalyzeTextRequest):
+    # 1) достаем профиль или создаем новый (если нет)
+    profile = PROFILES.get(req.reader_id)
+    if profile is None:
+        # если профиля нет — создаём “пустой” (возраст можно потом обновлять отдельно)
+        profile = ReaderProfile(id=req.reader_id, age="16+", concepts={})
+
+    # 2) считаем концепты из текста
+    new_concepts = analyze_text_to_concepts(req.text)
+
+    # 3) агрегируем: простое среднее старого и нового
+    updated: Dict[str, float] = {}
+    keys = set(profile.concepts.keys()) | set(new_concepts.keys())
+    for k in keys:
+        old = float(profile.concepts.get(k, 0.0))
+        new = float(new_concepts.get(k, 0.0))
+        updated[k] = (old + new) / 2.0
+
+    # 4) сохранить профиль
+    profile = ReaderProfile(id=profile.id, age=profile.age, concepts=updated)
+    PROFILES[req.reader_id] = profile
+
+    return {
+        "concepts": new_concepts,
+        "profile": profile
+    }
