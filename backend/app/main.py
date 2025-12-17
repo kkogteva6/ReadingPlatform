@@ -1,5 +1,6 @@
 #.\Activate.ps1
 # uvicorn app.main:app --reload --host 127.0.0.1 --port 7666
+#uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 
 import numpy as np
@@ -128,7 +129,7 @@ CONCEPT_ANCHORS: Dict[str, List[str]] = {
 def get_works_from_neo4j() -> List[Work]:
     query = """
     MATCH (w:Work)
-    OPTIONAL MATCH (w)-[r:EXPRESSES]->(c:Concept)
+    OPTIONAL MATCH (w)-[r:HAS_CONCEPT]->(c:Concept)
     RETURN
       w.id    AS id,
       w.title AS title,
