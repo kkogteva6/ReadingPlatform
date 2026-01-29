@@ -32,7 +32,7 @@ a{ color: inherit; text-decoration: none; }
 
 .card{
   width: 100%;
-  max-width: 880px;
+  /* max-width: 880px; */
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -83,7 +83,7 @@ a{ color: inherit; text-decoration: none; }
 }
 
 .panel{
-  max-width: 520px;
+  /* max-width: 520px; */
   width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -297,4 +297,262 @@ a{ color: inherit; text-decoration: none; }
 .hintText{
   color: var(--muted);
   font-size: 13px;
+}
+
+
+
+/* страничка ученика */
+
+.studentGrid{
+  /* display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 24px;
+  margin-top: 12px; */
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px){
+  .studentGrid{ grid-template-columns: 1fr; }
+}
+
+.infoRow{ display: grid; gap: 6px; }
+.infoLabel{ color: var(--muted); font-size: 13px; }
+
+.chips{ display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chipSoft{
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(29,78,216,0.18);
+  background: rgba(29,78,216,0.06);
+  font-size: 13px;
+}
+
+.chipSoftAccent{
+  border-color: rgba(15,118,110,0.20);
+  background: rgba(15,118,110,0.08);
+}
+
+.recList{ display: grid; gap: 12px; }
+
+.recCard{
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: #fff;
+}
+
+.recTitle{ font-weight: 750; }
+.recMeta{ color: var(--muted); font-size: 13px; margin-top: 3px; }
+
+.whyBox{
+  margin-top: 12px;
+  border: 1px dashed rgba(29,78,216,0.30);
+  background: rgba(29,78,216,0.05);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.whyLabel{
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.whyText{
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+
+.tabRow{
+  display:flex;
+  gap:10px;
+  flex-wrap: wrap;
+}
+
+.tabBtn{
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+  font-weight:650;
+}
+
+.tabBtnActive{
+  border-color: rgba(29,78,216,0.55);
+  background: linear-gradient(90deg, rgba(29,78,216,0.10), rgba(15,118,110,0.08));
+}
+
+.bigTextarea{
+  min-height: 220px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  outline: none;
+  resize: vertical;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.bigTextarea:focus{
+  border-color: rgba(29,78,216,0.55);
+  box-shadow: 0 0 0 4px rgba(29,78,216,0.12);
+}
+
+.fileBtn{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.qList{ display: grid; gap: 12px; margin-top: 12px; }
+
+.qRow{
+  display:grid;
+  grid-template-columns: 1fr 260px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:#fff;
+}
+
+@media (max-width: 900px){
+  .qRow{ grid-template-columns: 1fr; }
+}
+
+.qTitle{ font-weight: 750; }
+.qHint{ color: var(--muted); font-size: 13px; margin-top: 4px; line-height: 1.35; }
+
+.qControl{ display: grid; gap: 6px; }
+.qVal{ color: var(--muted); font-size: 13px; text-align: right; }
+
+
+/* чтобы растянуть на всю страницу */
+.dashboardContainer {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px 28px;
+}
+
+
+/* для анкеты */
+.testIntro{ display:grid; gap:8px; margin-top:10px; }
+.testNote{ color: var(--text); line-height: 1.45; }
+.testMeta{ color: var(--muted); font-size: 13px; }
+
+.progressWrap{
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.08);
+  overflow: hidden;
+}
+.progressBar{
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(29,78,216,0.9), rgba(15,118,110,0.85));
+}
+
+.questionCard{
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  background: #fff;
+}
+
+.qTop{
+  display:flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.qScale{ font-weight: 800; }
+.qStep{ color: var(--muted); font-size: 13px; }
+
+.qText{ margin-top: 10px; font-size: 16px; line-height: 1.45; }
+.qHint{ margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+
+.likertRow{
+  display:flex;
+  gap:10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.likertBtn{
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 800;
+}
+.likertBtn:hover{
+  border-color: rgba(29,78,216,0.45);
+}
+.likertBtnActive{
+  border-color: rgba(29,78,216,0.65);
+  background: rgba(29,78,216,0.10);
+}
+
+.likertLabels{
+  display:flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.navRow{
+  display:flex;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  /* flex-wrap: wrap; */
+}
+
+.nextBtn { margin-left: 12px; }
+
+.testError{
+  margin-top: 10px;
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.08);
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.consentRow{
+  display:flex;
+  gap:10px;
+  align-items: flex-start;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+
+.adminGrid{
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 980px){
+  .adminGrid{ grid-template-columns: 1fr; }
 }

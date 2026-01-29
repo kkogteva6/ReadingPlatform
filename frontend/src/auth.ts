@@ -46,3 +46,8 @@ export function roleHome(role: Role) {
   if (role === "teacher") return "/teacher";
   return "/admin";
 }
+
+export function logout() {
+  clearUser();
+}
+
